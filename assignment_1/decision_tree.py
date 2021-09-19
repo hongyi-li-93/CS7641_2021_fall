@@ -26,7 +26,7 @@ def error_rate(independent_matrix, dependent_vector, clf):
     return err    
 
 
-def cv_err_by_tree_depth(train_set, depth, ccp_alpha=0, k=10):
+def cv_err_by_tree_depth_alpha(train_set, depth, ccp_alpha=0, k=10):
     n = len(train_set.dependent_vector)
     
     errs_validate = []
@@ -49,7 +49,7 @@ def best_tree_depth_by_cv(train_set, min_depth=2, max_depth=20, k=10, plot_name=
     cv_errs = []
     for d in range(min_depth, max_depth+1):
         depths.append(d)
-        cv_errs.append(cv_err_by_tree_depth(train_set, d, k=k))
+        cv_errs.append(cv_err_by_tree_depth_alpha(train_set, d, k=k))
     best_d = depths[np.argmin(np.round(cv_errs, 5))]
     
     if plot_name is not None:
@@ -72,7 +72,7 @@ def best_ccp_alpha_by_cv(train_set, depth, k=10, plot_name=None):
     
     cv_errs = []
     for a in ccp_alphas:
-        cv_errs.append(cv_err_by_tree_depth(train_set, depth, ccp_alpha=a, k=k))
+        cv_errs.append(cv_err_by_tree_depth_alpha(train_set, depth, ccp_alpha=a, k=k))
     best_a = ccp_alphas[np.argmin(np.round(cv_errs, 5))]
     
     if plot_name is not None:
