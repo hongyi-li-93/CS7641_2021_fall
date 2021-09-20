@@ -44,7 +44,7 @@ def cv_err_by_tree_depth_alpha(train_set, depth, ccp_alpha=0, k=10):
     return np.mean(errs_validate)
 
 
-def best_tree_depth_by_cv(train_set, min_depth=2, max_depth=20, k=10, plot_name=None):
+def best_tree_depth_by_cv(train_set, min_depth=1, max_depth=20, k=10, plot_name=None):
     depths = []
     cv_errs = []
     for d in range(min_depth, max_depth+1):
