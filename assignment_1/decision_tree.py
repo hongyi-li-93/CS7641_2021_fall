@@ -50,6 +50,7 @@ def best_tree_depth_by_cv(train_set, min_depth=1, max_depth=20, k=10, plot_name=
     for d in range(min_depth, max_depth+1):
         depths.append(d)
         cv_errs.append(cv_err_by_tree_depth_alpha(train_set, d, k=k))
+        print(d)
     best_d = depths[np.argmin(np.round(cv_errs, 5))]
     
     if plot_name is not None:
@@ -100,6 +101,7 @@ def run(data_set_name):
 
 def main():
     run('abalone')
+    run('bank-additional')
 
 
 if __name__ == '__main__':

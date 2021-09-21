@@ -6,6 +6,7 @@ Created on Thu Sep  9 19:28:38 2021
 @author: lihongyi
 """
 import os
+from typing import List
 import pandas as pd
 from dataclasses import dataclass
 
@@ -85,6 +86,7 @@ class DataSetSchema:
 
 @dataclass
 class MLDataSpec:
+    independent_columns: List[str]
     dependent_column: str
     train_slice: slice
     test_slice: slice
@@ -95,17 +97,16 @@ class MLDataSpec:
 
 
 class MLDateSet:
-    def __init__(self, df_data, schema, dependent_column):
+    def __init__(self, df_data, schema, independent_columns, dependent_column):
         self._schema = schema
+        self._independent_columns = independent_columns
         self._dependent_column = dependent_column
         self._df_data = df_data.reset_index().sort_index()
         self.decompose_categorical_columns()
     
     def decompose_categorical_columns(self):
-        for col in self.schema.column_names:
-            if col == self._dependent_column:
-                continue    
-            if not isinstance(self.schema.column_type(col), Categorical):
+        for col in self._independent_columns:
+            if not self.schema.column_type(col).is_categorical:
                 continue
             for c in self.schema.column_type(col).support[1:]:
                 new_col_name = self.expanded_categorical_column_name(col, c)
@@ -115,10 +116,8 @@ class MLDateSet:
     @property
     def expanded_independent_columns(self):
         cols = []
-        for col in self.schema.column_names:
-            if col == self._dependent_column:
-                continue
-            if not isinstance(self.schema.column_type(col), Categorical):
+        for col in self._independent_columns:
+            if not self.schema.column_type(col).is_categorical:
                 cols.append(col)
             else:
                 for c in self.schema.column_type(col).support[1:]: 
@@ -186,8 +185,13 @@ Data_Set_Schemas = {
 
 
 Data_Set_Specs = {
-    'abalone': MLDataSpec('Rings_cat', slice(0, 3133), slice(3133, 4177), '.data', None, ',', False),
-    'bank-additional': MLDataSpec('y_cat', slice(0, 30891), slice(30891, 41188), '-full.csv', 0, ';', True),
+    'abalone': MLDataSpec(
+        ['Sex', 'Length', 'Diameter', 'Height', 'Whole_weight', 'Shucked_weight', 'Viscera_weight', 'Shell_weight'], 
+        'Rings_cat', slice(0, 3133), slice(3133, 4177), '.data', None, ',', False),
+    'bank-additional': MLDataSpec(
+        ['age', 'job', 'marital', 'education', 'default', 'housing', 'loan', 'contact', 'month', 'day_of_week', 'duration', 'campaign', 'pdays', 'previous', 'poutcome', 
+         'emp.var.rate', 'cons.price.idx', 'cons.conf.idx', 'euribor3m', 'nr.employed'], 
+        'y_cat', slice(0, 30891), slice(30891, 41188), '-full.csv', 0, ';', True),
     }
 
 
@@ -207,7 +211,7 @@ def get_train_test_ml_set(data_set_name, seed=111):
     data_raw = schema.derive_columns(data_raw)
     validate_df(data_raw, schema)
     
-    train_set = MLDateSet(data_raw[specs.train_slice], schema, specs.dependent_column)
-    test_set = MLDateSet(data_raw[specs.test_slice], schema, specs.dependent_column)
+    train_set = MLDateSet(data_raw[specs.train_slice], schema, specs.independent_columns, specs.dependent_column)
+    test_set = MLDateSet(data_raw[specs.test_slice], schema, specs.independent_columns, specs.dependent_column)
     return train_set, test_set        
     
