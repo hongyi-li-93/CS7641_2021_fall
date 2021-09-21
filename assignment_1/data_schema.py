@@ -88,6 +88,10 @@ class MLDataSpec:
     dependent_column: str
     train_slice: slice
     test_slice: slice
+    suffix: str
+    header: int
+    sep: str
+    rand_order: bool
 
 
 class MLDateSet:
@@ -141,7 +145,16 @@ class MLDateSet:
         return self._df_data[self._dependent_column].to_numpy()
 
 
-Data_Sets_Names = ['abalone']
+def validate_df(data_raw, schema):
+    for c in schema.column_names:
+        if schema.column_type(c).is_categorical:
+            diff = set(data_raw[c].unique().tolist()).difference(schema.column_type(c).support)
+            assert len(diff) == 0
+        else:
+            data_raw[c].astype(float)
+
+
+Data_Sets_Names = ['abalone', 'bank-additional']
 
 
 Data_Set_Schemas = {
@@ -152,25 +165,48 @@ Data_Set_Schemas = {
          'Rings': Categorical([i+1 for i in range(29)]), 
          'Rings_cat': Categorical([1, 2, 3]), }, 
         {'Rings_cat': lambda df: df['Rings'].map(lambda r: 1 if r <= 8 else 2 if r <= 10 else 3)}, ),
+    'bank-additional': DataSetSchema(
+        'bank-additional', 
+        ['age', 'job', 'marital', 'education', 'default', 'housing', 'loan', 'contact', 'month', 'day_of_week', 'duration', 'campaign', 'pdays', 'previous', 'poutcome', 
+         'emp.var.rate', 'cons.price.idx', 'cons.conf.idx', 'euribor3m', 'nr.employed', 'y'], 
+        {'job': Categorical(["admin.","blue-collar","entrepreneur","housemaid","management","retired","self-employed","services","student","technician","unemployed","unknown"]), 
+         'marital': Categorical(["divorced","married","single","unknown"]), 
+         'education': Categorical(["basic.4y","basic.6y","basic.9y","high.school","illiterate","professional.course","university.degree","unknown"]), 
+         'default': Categorical(["no","yes","unknown"]),
+         'housing': Categorical(["no","yes","unknown"]),
+         'loan': Categorical(["no","yes","unknown"]),
+         'contact': Categorical(["cellular","telephone"]),
+         'month': Categorical(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]),
+         'day_of_week': Categorical(["mon","tue","wed","thu","fri"]),
+         'poutcome': Categorical(["failure","nonexistent","success"]),
+         'y': Categorical(["yes","no"]),
+         'y_cat': Categorical([1, 0]), }, 
+        {'y_cat': lambda df: df['y'].map(lambda r: 1 if r == 'yes' else 0)}, ), 
     }
 
 
 Data_Set_Specs = {
-    'abalone': MLDataSpec('Rings_cat', slice(0, 3133), slice(3133, 4177))
+    'abalone': MLDataSpec('Rings_cat', slice(0, 3133), slice(3133, 4177), '.data', None, ',', False),
+    'bank-additional': MLDataSpec('y_cat', slice(0, 30891), slice(30891, 41188), '-full.csv', 0, ';', True),
     }
 
 
-def get_data_set_loc(data_set_name):
-    return os.path.join('data', data_set_name, f'{data_set_name}.data')
+def get_data_set_loc(data_set_name, suffix):
+    return os.path.join('data', data_set_name, f'{data_set_name}{suffix}')
 
 
-def get_train_test_ml_set(data_set_name):
+def get_train_test_ml_set(data_set_name, seed=111):
+    assert data_set_name in Data_Sets_Names
+    specs = Data_Set_Specs[data_set_name]
+    
     schema = Data_Set_Schemas[data_set_name]
-    data_raw = pd.read_csv(get_data_set_loc(data_set_name), header=None)
+    data_raw = pd.read_csv(get_data_set_loc(data_set_name, specs.suffix), header=specs.header, sep=specs.sep)
+    if specs.rand_order:
+        data_raw = data_raw.sample(frac=1, replace=False, random_state=seed).reset_index(drop=True)
     data_raw.columns = schema.input_column_names
     data_raw = schema.derive_columns(data_raw)
+    validate_df(data_raw, schema)
     
-    specs = Data_Set_Specs[data_set_name]
     train_set = MLDateSet(data_raw[specs.train_slice], schema, specs.dependent_column)
     test_set = MLDateSet(data_raw[specs.test_slice], schema, specs.dependent_column)
     return train_set, test_set        
