@@ -97,11 +97,12 @@ def run(data_set_name):
     clf = train_ada_tree(train_set.independent_matrix, train_set.dependent_vector, best_d, ccp_alpha=best_a)
     test_err = error_rate(test_set.independent_matrix, test_set.dependent_vector, clf)
     with open(f'{data_set_name}_ada_test_err.txt', 'w') as f:
-        f.write('%d' % test_err)
+        f.write('%.5f' % test_err)
 
 
 def main():
     run('abalone')
+    run('bank-additional')
 
 
 if __name__ == '__main__':
