@@ -35,6 +35,24 @@ class NearestNeiborClassifier:
     
     def predict(self, pred_matrix, slice_size=100):
         pred_matrix_normal = self._scaler.transform(pred_matrix)
+        n_tr = self._independent_matrix_normal.shape[0] 
+        n_pred = pred_matrix_normal.shape[0]
+        
+        tr_norm2 = (self._independent_matrix_normal * self._independent_matrix_normal).sum(axis=1)
+        pred_norm2 = (pred_matrix_normal * pred_matrix_normal).sum(axis=1)
+        inner_prod = pred_matrix_normal.dot(self._independent_matrix_normal.transpose())
+        
+        diff_matrix = -2 * inner_prod
+        for i in range(n_pred):
+            diff_matrix[i, :] += pred_norm2[i]
+        for j in range(n_tr):
+            diff_matrix[:, j] += tr_norm2[j]
+        
+        pred_vector = np.apply_along_axis(self._get_mode_of_neighbor, 1, diff_matrix).transpose()
+        return pred_vector
+    
+    def predict_old(self, pred_matrix, slice_size=1000):
+        pred_matrix_normal = self._scaler.transform(pred_matrix)
         n_pred = pred_matrix_normal.shape[0]
         
         pred_list = [[] for k in self._ks_neighbor]
@@ -95,6 +113,7 @@ def cv_err_by_k_neighbor(train_set, ks_neighbor: List, k=10):
         clf = train_k_nearest_neibor(train_set.independent_matrix[idx_map], train_set.dependent_vector[idx_map], ks_neighbor)
         err_validate = error_rate(train_set.independent_matrix[~idx_map], train_set.dependent_vector[~idx_map], clf, ks_neighbor)
         errs_validate.append(err_validate)
+        print(i)
     errs_validate = np.array(errs_validate)
     
     return np.mean(errs_validate, axis=0)
