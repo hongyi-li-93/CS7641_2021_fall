@@ -97,6 +97,9 @@ def run(data_set_name):
         train_set.dependent_vector, 
         n_first_layer, 
         n_second_layer)
+    train_err = error_rate(train_set.independent_matrix, train_set.dependent_vector, scaler, clf)
+    with open(f'{data_set_name}_nnet_train_err.txt', 'w') as f:
+        f.write('%.5f' % train_err)
     test_err = error_rate(test_set.independent_matrix, test_set.dependent_vector, scaler, clf)
     with open(f'{data_set_name}_nnet_test_err.txt', 'w') as f:
         f.write('%.5f' % test_err)

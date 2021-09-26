@@ -33,7 +33,7 @@ class NearestNeiborClassifier:
             return modes
         self._get_mode_of_neighbor = get_mode_of_neighbor
     
-    def predict(self, pred_matrix, slice_size=100):
+    def predict_once(self, pred_matrix):
         pred_matrix_normal = self._scaler.transform(pred_matrix)
         n_tr = self._independent_matrix_normal.shape[0] 
         n_pred = pred_matrix_normal.shape[0]
@@ -51,7 +51,7 @@ class NearestNeiborClassifier:
         pred_vector = np.apply_along_axis(self._get_mode_of_neighbor, 1, diff_matrix).transpose()
         return pred_vector
     
-    def predict_old(self, pred_matrix, slice_size=1000):
+    def predict(self, pred_matrix, slice_size=5000):
         pred_matrix_normal = self._scaler.transform(pred_matrix)
         n_pred = pred_matrix_normal.shape[0]
         
@@ -71,13 +71,18 @@ class NearestNeiborClassifier:
         n_tr = self._independent_matrix_normal.shape[0] 
         n_pred = pred_matrix_normal.shape[0]
         
-        pred_matrix_exp = np.repeat(pred_matrix_normal, n_tr, axis=0)
-        independent_matrix_exp = np.tile(self._independent_matrix_normal, (n_pred, 1))
-        diff_exp = pred_matrix_exp - independent_matrix_exp
-        diff_matrix = np.sqrt((diff_exp * diff_exp).sum(axis=1)).reshape((n_pred, n_tr))
+        tr_norm2 = (self._independent_matrix_normal * self._independent_matrix_normal).sum(axis=1)
+        pred_norm2 = (pred_matrix_normal * pred_matrix_normal).sum(axis=1)
+        inner_prod = pred_matrix_normal.dot(self._independent_matrix_normal.transpose())
         
-        pred_vector = np.apply_along_axis(self._get_mode_of_neighbor, 1, diff_matrix)
-        pred_list = pred_vector.transpose().tolist()
+        diff_matrix = -2 * inner_prod
+        for i in range(n_pred):
+            diff_matrix[i, :] += pred_norm2[i]
+        for j in range(n_tr):
+            diff_matrix[:, j] += tr_norm2[j]
+        
+        pred_vector = np.apply_along_axis(self._get_mode_of_neighbor, 1, diff_matrix).transpose()
+        pred_list = pred_vector.tolist()
         return pred_list
 
 
@@ -141,6 +146,9 @@ def run(data_set_name):
     train_set, test_set = get_train_test_ml_set(data_set_name)
     best_k = best_k_neighbor_by_cv(train_set, plot_name=data_set_name)
     clf = train_k_nearest_neibor(train_set.independent_matrix, train_set.dependent_vector, [best_k])
+    train_err = error_rate(train_set.independent_matrix, train_set.dependent_vector, clf, [best_k])[0]
+    with open(f'{data_set_name}_knn_train_err.txt', 'w') as f:
+        f.write('%.5f' % train_err)  
     test_err = error_rate(test_set.independent_matrix, test_set.dependent_vector, clf, [best_k])[0]
     with open(f'{data_set_name}_knn_test_err.txt', 'w') as f:
         f.write('%.5f' % test_err)  

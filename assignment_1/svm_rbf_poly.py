@@ -103,12 +103,18 @@ def run(data_set_name):
     
     best_g = best_rbf_gamma_by_cv(train_set, plot_name=data_set_name)
     scaler, clf = train_svm(train_set.independent_matrix, train_set.dependent_vector, kernel='rbf', gamma=best_g)
+    train_err = error_rate(train_set.independent_matrix, train_set.dependent_vector, scaler, clf)
+    with open(f'{data_set_name}_svm_rbf_train_err.txt', 'w') as f:
+        f.write('%.5f' % train_err)
     test_err = error_rate(test_set.independent_matrix, test_set.dependent_vector, scaler, clf)
     with open(f'{data_set_name}_svm_rbf_test_err.txt', 'w') as f:
         f.write('%.5f' % test_err)
     
     best_d = best_poly_degree_by_cv(train_set, plot_name=data_set_name)
     scaler, clf = train_svm(train_set.independent_matrix, train_set.dependent_vector, kernel='poly', degree=best_d)
+    train_err = error_rate(train_set.independent_matrix, train_set.dependent_vector, scaler, clf)
+    with open(f'{data_set_name}_svm_poly_train_err.txt', 'w') as f:
+        f.write('%.5f' % train_err)  
     test_err = error_rate(test_set.independent_matrix, test_set.dependent_vector, scaler, clf)
     with open(f'{data_set_name}_svm_poly_test_err.txt', 'w') as f:
         f.write('%.5f' % test_err)  

@@ -94,6 +94,9 @@ def run(data_set_name):
     best_d = best_tree_depth_by_cv(train_set, plot_name=data_set_name)
     best_a = best_ccp_alpha_by_cv(train_set, best_d, plot_name=data_set_name)
     clf = train_tree(train_set.independent_matrix, train_set.dependent_vector, best_d, best_a)
+    train_err = error_rate(train_set.independent_matrix, train_set.dependent_vector, clf)
+    with open(f'{data_set_name}_dt_train_err.txt', 'w') as f:
+        f.write('%.5f' % train_err)
     test_err = error_rate(test_set.independent_matrix, test_set.dependent_vector, clf)
     with open(f'{data_set_name}_dt_test_err.txt', 'w') as f:
         f.write('%.5f' % test_err)
