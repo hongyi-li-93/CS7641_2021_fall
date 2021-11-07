@@ -1,0 +1,4 @@
+# plot, data
+!*.txt
+!*.png
+!*.csv
